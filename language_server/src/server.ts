@@ -11,6 +11,8 @@ import {
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind
 } from 'vscode-languageserver';
+import {requestUidController} from './controllers/requestUidController';
+import * as vscode from 'vscode';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
@@ -98,50 +100,30 @@ connection.onDidChangeWatchedFiles((change) => {
 
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+connection.onCompletion(async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
-	
-	return [
-		{
-			label: 'TypeScript',
-			kind: CompletionItemKind.Text,
-			data: 1
-		},
-		{
-			label: 'JavaScript',
-			kind: CompletionItemKind.Text,
-			data: 2
-		}
-	]
+	let document = await vscode.workspace.openTextDocument(textDocumentPosition.textDocument.uri);
+	let text = document.getText(document.lineAt(textDocumentPosition.position.line).range);
+    var tx = text.substring(text.lastIndexOf("@")+1);
+	var data =  requestUidController.getCompletionItem('cs');
+	return data;
+	// return [
+	// 	{
+	// 		label: 'TypeScript',
+	// 		kind: CompletionItemKind.Text,
+	// 		data: 1
+	// 	},
+	// 	{
+	// 		label: 'JavaScript',
+	// 		kind: CompletionItemKind.Text,
+	// 		data: 2
+	// 	}
+	// ]
 });
-
-// public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): Promise<vscode.CompletionItem[]>{
-
-//             var completionItems = [];
-//             var text = document.getText(document.lineAt(position).range);
-//             var tx = text.substring(text.lastIndexOf("@")+1);
-//             // if(tx.length > 1 && tx[0] == ' '){
-//             //     var completionItems = [];
-//             // }
-//             var re = await this.getData('http://restfulapiwebservice0627.azurewebsites.net/uids/extension/', tx);
-//             re.forEach(element => {
-//                 var completionItem = new vscode.CompletionItem(element);
-//                 completionItem.kind = vscode.CompletionItemKind.Variable;
-//                 //completionItem.commitCharacters = ["c","s"];
-//                 completionItem.detail = "aaa";
-//                 //completionItem.filterText = "bbb";
-//                 completionItem.insertText = new vscode.SnippetString(element);
-//                 completionItems.push(completionItem);
-//             });
-//             return completionItems;
-//         }
         
-        public  getData(url:string, uid:string):Promise<string[]>{
-            var data = await httpRequestFactory.getUids(url, uid);
-            return data;
-		}
+        
 		
 // This handler resolve additional information for the item selected in
 // the completion list.
