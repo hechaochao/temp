@@ -5,19 +5,21 @@
   "author": "Microsoft Corporation",
   "license": "MIT",
   "engines": {
-    "node": "*"
+    "node": "*",
+    "vscode": "^1.13.0"
   },
   "dependencies": {
     "axios": "^0.16.2",
-    "vscode": "^1.1.4",
     "vscode-languageserver": "^3.1.0"
   },
   "devDependencies": {
     "@types/node": "^6.0.52",
-    "typescript": "^2.0.3"
+    "typescript": "^2.0.3",
+    "vscode": "^1.1.4"
   },
   "scripts": {
     "compile": "installServerIntoExtension ../language_client ./package.json ./tsconfig.json && tsc -p .",
-    "watch": "installServerIntoExtension ../language_client ./package.json ./tsconfig.json && tsc --watch -p ."
+    "watch": "installServerIntoExtension ../language_client ./package.json ./tsconfig.json && tsc --watch -p .",
+    "postinstall": "node ./node_modules/vscode/bin/install"
   }
 }

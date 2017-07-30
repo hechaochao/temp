@@ -100,14 +100,22 @@ connection.onDidChangeWatchedFiles((change) => {
 
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion(async (textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+connection.onCompletion(async(textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
-	let document = await vscode.workspace.openTextDocument(textDocumentPosition.textDocument.uri);
-	let text = document.getText(document.lineAt(textDocumentPosition.position.line).range);
-    var tx = text.substring(text.lastIndexOf("@")+1);
-	var data =  requestUidController.getCompletionItem('cs');
+	console.log("hehe "+textDocumentPosition.textDocument.uri);
+	var text = documents.get(textDocumentPosition.textDocument.uri).getText();
+	var tx = text.substring(text.lastIndexOf("@")+1);
+	// var f = vscode.workspace.openTextDocument;
+	// var t = f(textDocumentPosition.textDocument.uri);
+	// .then(document=>{
+	// 	let text = document.getText(document.lineAt(textDocumentPosition.position.line).range);
+    // 	var tx = text.substring(text.lastIndexOf("@")+1);
+	// });
+	
+	var data = 	await requestUidController.getCompletionItem(tx);
+	console.log("data:"+data);
 	return data;
 	// return [
 	// 	{

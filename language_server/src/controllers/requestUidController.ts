@@ -3,16 +3,16 @@ import {httpRequestFactory} from '../utility/httpRequestFactory';
 
 export class requestUidController {
 
-    static async getCompletionItem(partUid: string) {
+    static async getCompletionItem(partUid: string): Promise<CompletionItem[]> {
         let completionItems: CompletionItem[] = [];
         // var text = document.getText(document.lineAt(position).range);
         // var tx = text.substring(text.lastIndexOf("@")+1);
         // if(tx.length > 1 && tx[0] == ' '){
         //     var completionItems = [];
         // }
-        var re = await this.getData('http://restfulapiwebservice0627.azurewebsites.net/uids/extension/', 'cs');
+        var re = await this.getData('http://restfulapiwebservice0627.azurewebsites.net/uids/extension/', partUid);
         re.forEach(element => {
-            let completionItem: CompletionItem = CompletionItem.create("cs");
+            let completionItem: CompletionItem = CompletionItem.create(element);
             completionItem.kind = CompletionItemKind.Variable;
             //completionItem.commitCharacters = ["c","s"];
             completionItem.detail = "aaa";
