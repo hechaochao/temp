@@ -6,11 +6,17 @@
 
 import * as path from 'path';
 
-import { workspace, Disposable, ExtensionContext } from 'vscode';
+import * as vscode from 'vscode';
 import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, TransportKind } from 'vscode-languageclient';
 
-export function activate(context: ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
 
+	connectServer(context);
+	highlight(context);
+}
+
+function connectServer(context: vscode.ExtensionContext)
+{
 	// The server is implemented in node
 	let serverModule = context.asAbsolutePath(path.join('server', 'server.js'));
 	// The debug options for the server
@@ -32,7 +38,7 @@ export function activate(context: ExtensionContext) {
 			// Synchronize the setting section 'languageServerExample' to the server
 			configurationSection: 'languageServerExample',
 			// Notify the server about file changes to '.clientrc files contain in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
 		}
 	};
 	
@@ -42,4 +48,81 @@ export function activate(context: ExtensionContext) {
 	// Push the disposable to the context's subscriptions so that the 
 	// client can be deactivated on extension deactivation
 	context.subscriptions.push(disposable);
+}
+
+function highlight(context: vscode.ExtensionContext)
+{
+
+	console.log('decorator sample is activated');
+
+	// create a decorator type that we use to decorate small numbers
+	const smallNumberDecorationType = vscode.window.createTextEditorDecorationType({
+		borderWidth: '1px',
+		borderStyle: 'solid',
+		overviewRulerColor: 'blue',
+		overviewRulerLane: vscode.OverviewRulerLane.Right,
+		light: {
+			// this color will be used in light color themes
+			borderColor: 'darkblue'
+		},
+		dark: {
+			// this color will be used in dark color themes
+			borderColor: 'lightblue'
+		}
+	});
+
+	// create a decorator type that we use to decorate large numbers
+	const largeNumberDecorationType = vscode.window.createTextEditorDecorationType({
+		cursor: 'crosshair',
+		backgroundColor: 'rgba(255,0,0,0.3)'
+	});
+
+	let activeEditor = vscode.window.activeTextEditor;
+	if (activeEditor) {
+		triggerUpdateDecorations();
+	}
+
+	vscode.window.onDidChangeActiveTextEditor(editor => {
+		activeEditor = editor;
+		if (editor) {
+			triggerUpdateDecorations();
+		}
+	}, null, context.subscriptions);
+
+	vscode.workspace.onDidChangeTextDocument(event => {
+		if (activeEditor && event.document === activeEditor.document) {
+			triggerUpdateDecorations();
+		}
+	}, null, context.subscriptions);
+
+	var timeout = null;
+	function triggerUpdateDecorations() {
+		if (timeout) {
+			clearTimeout(timeout);
+		}
+		timeout = setTimeout(updateDecorations, 500);
+	}
+
+	function updateDecorations() {
+		if (!activeEditor) {
+			return;
+		}
+		const regEx = /@\w+/g;
+		const text = activeEditor.document.getText();
+		const smallNumbers: vscode.DecorationOptions[] = [];
+		const largeNumbers: vscode.DecorationOptions[] = [];
+		let match;
+		while (match = regEx.exec(text)) {
+			const startPos = activeEditor.document.positionAt(match.index);
+			const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+			const decoration = { range: new vscode.Range(startPos, endPos), hoverMessage: 'Number **' + match[0] + '**' };
+			if (match[0].length < 3) {
+				smallNumbers.push(decoration);
+			} else {
+				largeNumbers.push(decoration);
+			}
+		}
+		activeEditor.setDecorations(smallNumberDecorationType, smallNumbers);
+		activeEditor.setDecorations(largeNumberDecorationType, largeNumbers);
+	}
 }
