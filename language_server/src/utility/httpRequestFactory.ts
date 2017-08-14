@@ -12,7 +12,7 @@ export class httpRequestFactory {
         let promise = this._client.get(url + uid + "/");
         let response = await promise;
         //= 
-        console.log(response.data);
+        //console.log(response.data);
         let data = await response.data;
         return data;
         

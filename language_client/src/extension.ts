@@ -12,7 +12,7 @@ import { LanguageClient, LanguageClientOptions, SettingMonitor, ServerOptions, T
 export function activate(context: vscode.ExtensionContext) {
 
 	connectServer(context);
-	highlight(context);
+	//highlight(context);
 }
 
 function connectServer(context: vscode.ExtensionContext)
@@ -74,7 +74,9 @@ function highlight(context: vscode.ExtensionContext)
 	// create a decorator type that we use to decorate large numbers
 	const largeNumberDecorationType = vscode.window.createTextEditorDecorationType({
 		cursor: 'crosshair',
-		backgroundColor: 'rgba(255,0,0,0.3)'
+		color: 'rgba(255,255,0,1)',
+		border:"1px",
+		borderRadius:"20"
 	});
 
 	let activeEditor = vscode.window.activeTextEditor;
@@ -107,7 +109,8 @@ function highlight(context: vscode.ExtensionContext)
 		if (!activeEditor) {
 			return;
 		}
-		const regEx = /@\w+/g;
+		//let keywordsPattern: RegExp = [/@[\w.#\*,\(\)]+/g];
+		const regEx = /(@([^ >]+))|(<xref:([^ >]+)>)/g;
 		const text = activeEditor.document.getText();
 		const smallNumbers: vscode.DecorationOptions[] = [];
 		const largeNumbers: vscode.DecorationOptions[] = [];

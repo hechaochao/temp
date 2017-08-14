@@ -10,12 +10,13 @@ export class requestUidController {
         // if(tx.length > 1 && tx[0] == ' '){
         //     var completionItems = [];
         // }
-        var re = await this.getData('http://restfulapiwebservice0627.azurewebsites.net/uids/extension/', partUid);
-        re.forEach(element => {
-            let completionItem: CompletionItem = CompletionItem.create(element);
-            completionItem.kind = CompletionItemKind.Variable;
+        var re = await this.getData('http://xrefservice0810.azurewebsites.net/intellisense/', partUid);
+        //console.log(re);
+        re.forEach( function (element) {
+            let completionItem: CompletionItem = CompletionItem.create(element.uid);
+            completionItem.kind = element.type;
             //completionItem.commitCharacters = ["c","s"];
-            completionItem.detail = "aaa";
+            completionItem.detail = element.href;
             //completionItem.filterText = "bbb";
             //completionItem.insertText = new vscode.SnippetString(element);
             completionItems.push(completionItem);
@@ -23,7 +24,7 @@ export class requestUidController {
         return completionItems;
     }
 
-    static async  getData(url:string, uid:string):Promise<string[]> {
+    static async  getData(url:string, uid:string):Promise<any[]> {
         var data = await httpRequestFactory.getUids(url, uid);
         return data;
 	}

@@ -9,11 +9,12 @@ import {
 	createConnection, IConnection, TextDocumentSyncKind,
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
-	CompletionItem, CompletionItemKind
+	CompletionItem, CompletionItemKind, TextDocumentIdentifier, 
+	DocumentHighlight, Range
 } from 'vscode-languageserver';
 import {requestUidController} from './controllers/requestUidController';
-import * as vscode from 'vscode';
-
+//import * as vscode from 'vscode';
+import * as protocol from 'vscode-languageserver/lib/protocol';
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -35,8 +36,10 @@ connection.onInitialize((params): InitializeResult => {
 			textDocumentSync: documents.syncKind,
 			// Tell the client that the server support code complete
 			completionProvider: {
-				resolveProvider: true
-			}
+				resolveProvider: true,
+				//triggerCharacters:["*"]
+			},
+			documentHighlightProvider: true
 		}
 	}
 });
@@ -45,6 +48,13 @@ connection.onInitialize((params): InitializeResult => {
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent((change) => {
 	validateTextDocument(change.document);
+	var tdx = <TextDocumentPositionParams>{};
+	var tdi = <TextDocumentIdentifier>{};
+	tdi.uri = change.document.uri;
+	tdx.textDocument = tdi;
+	//connection.sendRequest("completeHandler", tdx);
+	//completeHandler(tdx);
+	//console.log("text changed");
 });
 
 // The settings interface describe the server relevant settings part
@@ -96,15 +106,16 @@ function validateTextDocument(textDocument: TextDocument): void {
 connection.onDidChangeWatchedFiles((change) => {
 	// Monitored files have change in VSCode
 	connection.console.log('We received an file change event');
+	
+	//connection.onCompletion
 });
 
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(async(textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]> => {
+async function completeHandler(textDocumentPosition: TextDocumentPositionParams): Promise<CompletionItem[]>
+{
 	// The pass parameter contains the position of the text document in 
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
-	console.log("hehe "+textDocumentPosition.textDocument.uri);
+	//console.log("hehe:"+textDocumentPosition.textDocument.uri);
 	var text = documents.get(textDocumentPosition.textDocument.uri).getText();
 	var tx = text.substring(text.lastIndexOf("@")+1);
 	// var f = vscode.workspace.openTextDocument;
@@ -115,7 +126,7 @@ connection.onCompletion(async(textDocumentPosition: TextDocumentPositionParams):
 	// });
 	
 	var data = 	await requestUidController.getCompletionItem(tx);
-	console.log("data:"+data);
+	console.log("data::");
 	return data;
 	// return [
 	// 	{
@@ -129,7 +140,9 @@ connection.onCompletion(async(textDocumentPosition: TextDocumentPositionParams):
 	// 		data: 2
 	// 	}
 	// ]
-});
+}
+// This handler provides the initial list of the completion items.
+connection.onCompletion(completeHandler);
         
         
 		
@@ -145,6 +158,24 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 	}
 	return item;
 });
+
+async function highlightHandler(textDocumentPosition: TextDocumentPositionParams): Promise<DocumentHighlight[]>
+{
+	const regEx = /(@([^ >]+))|(<xref:([^ >]+)>)/g;
+	let textDocument = documents.get(textDocumentPosition.textDocument.uri);
+	const text = textDocument.getText();
+	let match;
+	let documentHighlight: DocumentHighlight[] = [];
+	while(match = regEx.exec(text)) {
+		const startPos = textDocument.positionAt(match.index);
+		const endPos = textDocument.positionAt(match.index + match[0].length);
+		let highLight = DocumentHighlight.create(Range.create(startPos, endPos),2);
+		documentHighlight.push(highLight);
+	}
+	return documentHighlight;
+}
+
+connection.onDocumentHighlight(highlightHandler);
 
 let t: Thenable<string>;
 
