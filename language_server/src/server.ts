@@ -10,11 +10,12 @@ import {
 	TextDocuments, TextDocument, Diagnostic, DiagnosticSeverity,
 	InitializeParams, InitializeResult, TextDocumentPositionParams,
 	CompletionItem, CompletionItemKind, TextDocumentIdentifier, 
-	DocumentHighlight, Range
+	DocumentHighlight, Range, DocumentLinkParams, DocumentLink
 } from 'vscode-languageserver';
 import {requestUidController} from './controllers/requestUidController';
 //import * as vscode from 'vscode';
 import * as protocol from 'vscode-languageserver/lib/protocol';
+
 // Create a connection for the server. The connection uses Node's IPC as a transport
 let connection: IConnection = createConnection(new IPCMessageReader(process), new IPCMessageWriter(process));
 
@@ -39,7 +40,10 @@ connection.onInitialize((params): InitializeResult => {
 				resolveProvider: true,
 				//triggerCharacters:["*"]
 			},
-			documentHighlightProvider: true
+			documentHighlightProvider: true,
+			documentLinkProvider: {
+				resolveProvider: false,
+			}
 		}
 	}
 });
@@ -177,6 +181,32 @@ async function highlightHandler(textDocumentPosition: TextDocumentPositionParams
 
 connection.onDocumentHighlight(highlightHandler);
 
+async function documentLinkHandler(documentLinkParams: DocumentLinkParams): Promise<DocumentLink[]>
+{
+	const regEx = /(@([^ >]+))|(<xref:([^ >]+)>)/g;
+	let textDocument = documents.get(documentLinkParams.textDocument.uri);
+	const text = textDocument.getText();
+	let match;
+	let documentLinks: DocumentLink[] = [];
+	while(match = regEx.exec(text)) {
+		const startPos = textDocument.positionAt(match.index);
+		const endPos = textDocument.positionAt(match.index + match[0].length);
+		let tx = textDocument.getText();
+		let str;
+		if(tx[0] == '@') {
+			str = tx.substr(match.index + 1, match[0].length - 1);
+		} else {
+			str = tx.substr(match.index + 6, match[0].length - 6);
+		}
+		console.log("docunmentLink:"+str);
+		let xrefSpecs = await requestUidController.getData('http://xrefservice0810.azurewebsites.net/uids/', str);
+		let documentLink: DocumentLink = DocumentLink.create(Range.create(startPos, endPos), xrefSpecs[0].href);
+		documentLinks.push(documentLink);
+	}
+	return documentLinks;
+}
+
+connection.onDocumentLinks(documentLinkHandler);
 let t: Thenable<string>;
 
 /*
